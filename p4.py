@@ -13,11 +13,11 @@ def camera_calibrate(visualize= True):
     img_points = []   # to store 2D image points
 
     wrld_points = np.zeros((6*9,3), np.float32)
-    wrld_points[:,:2] = np.mpgrid[0:9,0:6].T.reshape(-1,2)
+    wrld_points[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
 
     for file_name in images:
-        img = mpimg.imread(fname)
-        h, w, c = image.shape
+        img = mpimg.imread(file_name)
+        h, w, c = img.shape
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) # converting into grayscale
 
         # get chessboard corners
@@ -32,8 +32,9 @@ def camera_calibrate(visualize= True):
     rt, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(world_points, img_points, (h,w), None, None)
 
     if(visualize):
-        image = mpimg.imread(images[2])
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) # converting into grayscale
+        print(images)
+        image = mpimg.imread(images[0])
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # converting into grayscale
         # get chessboard corners
         ret,corners = cv2.findChessboardCorners(gray, (9,6), None)
 
@@ -53,3 +54,5 @@ def camera_calibrate(visualize= True):
         plt.show()
 
     return mtx, dist
+
+camera_calibrate()
