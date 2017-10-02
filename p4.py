@@ -143,8 +143,10 @@ def warper(image, mtx, dist, showROI=True, showWarped = True):
 
 
 def detect_lane(warped, xm_per_pix, first_image = False, abnormal_threshold=200):
+    global left_fit, right_fit
     global leftx, lefty, rightx, righty
-
+    global previous_left_fitx, previous_right_fitx, previous_out_img
+    global abnormal_count
     # Take a histogram of the bottom half of the image
     histogram = np.sum(binary_warped[(int)(binary_warped.shape[0]/2):,:], axis=0)
     # Create an image to draw on and an image to show the selection window
