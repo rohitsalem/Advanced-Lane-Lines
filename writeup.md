@@ -64,5 +64,8 @@ I used the technique suggested in the class, the sliding window and histogram te
 ![alt text][image8]
 
 The functions for calculating the radius of curvature (lines 270-284) and vehicle position (lines 286-299) can be found in the p4.py 
+Final output on a test image:
+
+![alt text][image9]
 
 My code still fails sometime while using the challenge video, I look forward to improve the detect_lane function along with fine tuning of the thresholding. 
