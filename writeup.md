@@ -68,4 +68,6 @@ Final output on a test image:
 
 ![alt text][image9]
 
+The Project output on the video can be found [here](project_out.mp4)
 My code still fails sometime while using the challenge video, I look forward to improve the detect_lane function along with fine tuning of the thresholding. 
+
