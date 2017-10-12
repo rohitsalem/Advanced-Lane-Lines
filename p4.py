@@ -3,6 +3,9 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from moviepy.editor import VideoFileClip
+import imageio
+
 
 ## camera Calibrate function
 def camera_calibrate():
@@ -107,9 +110,8 @@ def warper(image, mtx, dist, showROI=True, showWarped = True):
     h, w = image.shape[:2]
 
     # source points depict the region of interest
-    source_points = np.float32([[(w*0.125), h], [w*0.9, h], [(w/8)*3.7, (h/8)*5], [(w/8)*4.6, (h/8)*5]])
+    source_points = np.float32([[(w/8), h], [(w/8)*7, h], [(w/8)*3.7, h/1.6], [(w/8)*4.3, h/1.6]])
     dest_points = np.float32([[(w/5), h], [(w/5)*4, h], [(w/5), 0], [(w/5)*4, 0]])
-
     M = cv2.getPerspectiveTransform(source_points, dest_points)
     Minv = cv2.getPerspectiveTransform(dest_points, source_points)
     warped_image = cv2.warpPerspective(image, M, (w, h), flags=cv2.INTER_LINEAR)
@@ -361,46 +363,33 @@ if (visualize_lane):
 # radius_of_curvature = radius_of_curvature(xm_per_pix, ym_per_pix)
 
 ## TO get the video
-#
 # # Define conversions in x and y from pixels space to meters
 xm_per_pix = 3.7/700 # meters per pixel in x dimension
 ym_per_pix = 30/720 # meters per pixel in y dimension
-#
-video = cv2.VideoCapture("project_video.mp4")
+
+# Test on Video
 first_image = True
-# # Default resolutions of the frame are obtained.The default resolutions are system dependent.
-# # We convert the resolutions from float to integer.
-frame_width = int(video.get(3))
-frame_height = int(video.get(4))
+filename = 'project_video.mp4'
+vid = imageio.get_reader(filename,  'ffmpeg')
+fps = vid.get_meta_data()['fps']
+writer = imageio.get_writer('project_out.mp4',fps=fps)
+print("Testing on video, Please wait ..")
+for i,im in enumerate(vid):
+    undistort = cv2.undistort(im, mtx, dist, None, mtx)
+    binary = gradient_thresholding(undistort)
+    binary_warped, M, Minv = warper(binary, mtx, dist, showROI=False, showWarped=False)
+    lane_detected, left_fitx, right_fitx, ploty = detect_lane(binary_warped, xm_per_pix, first_image)
+    if(first_image):
+        first_image = False
+    radius = radius_of_curvature(xm_per_pix, ym_per_pix)
+    difference, direction = vehicle_position(xm_per_pix, ym_per_pix)
+    output_img = output(undistort)
 
-# Define the codec and create VideoWriter object.The output is stored in 'output.mp4' file.
-out = cv2.VideoWriter('project_output.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 25, (frame_width,frame_height))
+    cv2.putText(output_img,"Radius of curvature: {0:.2f} meters".format(radius), (25,50), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
+    cv2.putText(output_img,"Vehicle is {0:.2f} m {1} of center".format(difference, direction), (25,100), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
+    writer.append_data(output_img[:,:,:])
 
-while(True):
-
-    ret, frame = video.read()
-    if ret == True:
-        undistort = cv2.undistort(frame, mtx, dist, None, mtx)
-        binary = gradient_thresholding(undistort)
-        binary_warped, M, Minv = warper(binary, mtx, dist, showROI=False, showWarped=False)
-        lane_detected, left_fitx, right_fitx, ploty = detect_lane(binary_warped, xm_per_pix, first_image)
-        if(first_image):
-            first_image = False
-        radius = radius_of_curvature(xm_per_pix, ym_per_pix)
-        difference, direction = vehicle_position(xm_per_pix, ym_per_pix)
-        output = output(undistort)
-
-        cv2.putText(output,"Radius of curvature: {0:.2f} meters".format(radius), (25,50), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
-        cv2.putText(output,"Vehicle is {0:.2f} m {1} of center".format(difference, direction), (25,100), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
-        out.write(output)
-    # Break the loop
-    else:
-        break
-
-# When everything done, release the video capture and video write objects
-video.release()
-out.release()
-
+writer.close()
 ## To Display on test image
 visualize_test_image = False
 if (visualize_test_image):
