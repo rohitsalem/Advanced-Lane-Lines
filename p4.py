@@ -75,21 +75,27 @@ def visualize_undistorted_image(image,vis=True,):
         plt.show()
 
 
-def gradient_thresholding(image, sx_thresh=(20, 100)):
+def gradient_thresholding(image, s_thresh = (170,255), sx_thresh=(20, 100)):
     # convert to HLS color space, separate s channel
     hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS).astype(np.float)
     s_channel = hls[:,:,2]
+    l_channel = hls[:,:,1]
 
-    sobelx = cv2.Sobel(s_channel, cv2.CV_64F, 1, 0) #take x derivative
+    sobelx = cv2.Sobel(l_channel, cv2.CV_64F, 1, 0) #take x derivative
     sobelx_abs = np.absolute(sobelx) #absolute x derivative
     sobel_scaled = np.uint8(255*sobelx_abs/np.max(sobelx_abs))
 
     # Thresholding x gradient
-    s_binary = np.zeros_like(sobel_scaled)
-    s_binary[(sobel_scaled >= sx_thresh[0]) & (sobel_scaled <=sx_thresh[1])] = 1
+    sxbinary = np.zeros_like(sobel_scaled)
+    sxbinary[(sobel_scaled >= sx_thresh[0]) & (sobel_scaled <=sx_thresh[1])] = 1
 
-    binary = np.zeros_like(s_binary)
-    binary[(s_binary == 1)]=1
+    # Threshold color channel
+    s_binary = np.zeros_like(s_channel)
+    s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1
+
+    # combining both the Thresholds
+    binary = np.zeros_like(sxbinary)
+    binary[(sxbinary == 1) | (s_binary == 1)] = 1
 
     return binary
 
@@ -345,7 +351,7 @@ binary_warped, M, Minv = warper(binary_image, mtx, dist, showROI=False, showWarp
 
 # Define conversions in x and y from pixels space to meters
 xm_per_pix = 3.7/700 # meters per pixel in x dimension
-ym_per_pix = 30/720 # meters per pixel in y dimension
+ym_per_pix = 30/720 # meters pe r pixel in y dimension
 
 #Lane detection
 lane_detected, left_fitx, right_fitx, ploty = detect_lane(binary_warped, xm_per_pix, True)
@@ -368,28 +374,30 @@ xm_per_pix = 3.7/700 # meters per pixel in x dimension
 ym_per_pix = 30/720 # meters per pixel in y dimension
 
 # Test on Video
-first_image = True
-filename = 'project_video.mp4'
-vid = imageio.get_reader(filename,  'ffmpeg')
-fps = vid.get_meta_data()['fps']
-writer = imageio.get_writer('project_out.mp4',fps=fps)
-print("Testing on video, Please wait ..")
-for i,im in enumerate(vid):
-    undistort = cv2.undistort(im, mtx, dist, None, mtx)
-    binary = gradient_thresholding(undistort)
-    binary_warped, M, Minv = warper(binary, mtx, dist, showROI=False, showWarped=False)
-    lane_detected, left_fitx, right_fitx, ploty = detect_lane(binary_warped, xm_per_pix, first_image)
-    if(first_image):
-        first_image = False
-    radius = radius_of_curvature(xm_per_pix, ym_per_pix)
-    difference, direction = vehicle_position(xm_per_pix, ym_per_pix)
-    output_img = output(undistort)
+test_on_video = True
+if (test_on_video):
+    first_image = True
+    filename = 'project_video.mp4'
+    vid = imageio.get_reader(filename,  'ffmpeg')
+    fps = vid.get_meta_data()['fps']
+    writer = imageio.get_writer('project_out.mp4',fps=fps)
+    print("Testing on video, Please wait ..")
+    for i,im in enumerate(vid):
+        undistort = cv2.undistort(im, mtx, dist, None, mtx)
+        binary = gradient_thresholding(undistort)
+        binary_warped, M, Minv = warper(binary, mtx, dist, showROI=False, showWarped=False)
+        lane_detected, left_fitx, right_fitx, ploty = detect_lane(binary_warped, xm_per_pix, first_image)
+        if(first_image):
+            first_image = False
+        radius = radius_of_curvature(xm_per_pix, ym_per_pix)
+        difference, direction = vehicle_position(xm_per_pix, ym_per_pix)
+        output_img = output(undistort)
 
-    cv2.putText(output_img,"Radius of curvature: {0:.2f} meters".format(radius), (25,50), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
-    cv2.putText(output_img,"Vehicle is {0:.2f} m {1} of center".format(difference, direction), (25,100), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
-    writer.append_data(output_img[:,:,:])
+        cv2.putText(output_img,"Radius of curvature: {0:.2f} meters".format(radius), (25,50), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
+        cv2.putText(output_img,"Vehicle is {0:.2f} m {1} of center".format(difference, direction), (25,100), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
+        writer.append_data(output_img[:,:,:])
 
-writer.close()
+    writer.close()
 ## To Display on test image
 visualize_test_image = False
 if (visualize_test_image):
