@@ -69,5 +69,6 @@ Final output on a test image:
 ![alt text][image9]
 
 The Project output on the video can be found [here](project_out.mp4)
-My code still fails sometime while using the challenge video, I look forward to improve the detect_lane function along with fine tuning of the thresholding. 
+Discussion:
+My code still fails sometime while using the challenge and Harder challenge videos, One major reason is that this pipeline is looking for a straight or an almost straight line and confined to that region of interest, which is not the case in the challenge videos where the lanes curve incredibly. I will have to improve the curvature function for this to act better, and I look forward to improve the detect_lane function along with fine tuning of the thresholding. 
 
